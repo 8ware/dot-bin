@@ -1,0 +1,55 @@
+#! /usr/bin/env bash
+#
+# https://tex.stackexchange.com/questions/1460/script-to-automate-externalizing-tikz-graphics#1475
+# https://tex.stackexchange.com/questions/83992/how-to-create-and-include-tikz-files-in-your-manuscript
+# https://stackoverflow.com/questions/2701902/standalone-diagrams-with-tikz
+# http://www.hackenberger.at/blog/ktikz-editor-for-the-tikz-language/
+#
+
+document=()
+class=scrartcl #minimal #standalone
+# Packages/Input
+while getopts 'c:i:l:u:' opt; do
+	case "$opt" in
+		c)
+			class=$OPTARG
+			;;
+		i)
+			document+=( "\\input{$OPTARG}" )
+			;;
+		l) # Use tikz library (although this can be set within tikz document)
+			document+=( "\\usetikzlibrary{$OPTARG}" )
+			;;
+		u)
+			document+=( "\\usepackage{$OPTARG}" )
+			;;
+	esac
+done
+shift $((OPTIND -1))
+# Preamble
+document=(
+	"\\documentclass{$class}"
+	"\\usepackage{tikz}"
+	"${document[@]}"
+)
+# TikZ figure
+document+=(
+	"\\begin{document}"
+	"\\thispagestyle{empty}"
+	"\\begin{figure}"
+		"\\centering"
+		"\\input{$1}"
+	"\\end{figure}"
+	"\\end{document}"
+)
+
+if [ ! -f "$1" ]; then
+	echo "File does not exist: $1" >&2
+	exit 1
+fi
+
+name=${1%.tikz}
+mkdir -p "$name"
+
+pdflatex -jobname "$name" -output-directory "$name"	"${document[@]}"
+
