@@ -13,14 +13,37 @@
 #
 # TODO
 # * Provide option use different output directory
+# * Provide option to enable grid (maybe implement as overlay?)
 #
+
+display() {
+	local file=$1
+
+	while read -r line; do
+		echo $line
+	done
+}
+
+compile() {
+	local file=$1
+
+	if [ ! -f "$file" ]; then
+		echo "File does not exist: $1" >&2
+		exit 1
+	fi
+
+	local name=${file%.tikz}
+	mkdir -p "$name"
+
+	pdflatex -jobname "$name" -output-directory "$name"
+}
 
 class='standalone'
 classopts='tikz,border=0.5cm'
 packages=()
 tikzlibs=()
 inputs=()
-debug=false
+action=compile
 while getopts 'c:C:p:l:i:d' opt; do
 	case "$opt" in
 		c)
@@ -41,7 +64,7 @@ while getopts 'c:C:p:l:i:d' opt; do
 			inputs+=( $'\n'"\\input{$OPTARG}" )
 			;;
 		d)
-			debug=true
+			action=display
 			;;
 		h|\?)
 			echo "usage: $(basename "$0")" \
@@ -57,28 +80,7 @@ while getopts 'c:C:p:l:i:d' opt; do
 done
 shift $((OPTIND -1))
 
-if $debug; then
-	cat <<-LATEX
-	\documentclass[$classopts]{$class}
-	${packages[@]}
-	${tikzlibs[@]}
-	${inputs[@]}
-	\begin{document}
-		\input{$1}
-	\end{document}
-	LATEX
-	exit
-fi
-
-if [ ! -f "$1" ]; then
-	echo "File does not exist: $1" >&2
-	exit 1
-fi
-
-name=${1%.tikz}
-mkdir -p "$name"
-
-pdflatex -jobname "$name" -output-directory "$name" <<LATEX
+$action $1 <<LATEX
 \documentclass[$classopts]{$class}
 ${packages[@]}
 ${tikzlibs[@]}
