@@ -49,6 +49,7 @@ while getopts 'c:C:p:l:i:d' opt; do
 				"[-p package]" \
 				"[-l tikzlibrary]" \
 				"[-i \input]" \
+				"[-d]" \
 				"<file>.tikz"
 			exit
 			;;
