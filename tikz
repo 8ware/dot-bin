@@ -5,43 +5,69 @@
 # https://stackoverflow.com/questions/2701902/standalone-diagrams-with-tikz
 # http://www.hackenberger.at/blog/ktikz-editor-for-the-tikz-language/
 #
+#
+# Additional code can be passed as follows:
+#
+#   tikz -i <(echo '\let\code\lstinline') example.tikz
+#
+#
+# TODO
+# * Provide option use different output directory
+#
 
-document=()
-class=scrartcl #minimal #standalone
-# Packages/Input
-while getopts 'c:i:l:u:' opt; do
+class='standalone'
+classopts='tikz,border=0.5cm'
+packages=()
+tikzlibs=()
+inputs=()
+debug=false
+while getopts 'c:C:p:l:i:d' opt; do
 	case "$opt" in
 		c)
 			class=$OPTARG
+			classopts=
+			packages+=( $'\n'"\\usepackage{tikz}" )
+			;;
+		C)
+			classopts=$OPTARG
+			;;
+		p)
+			packages+=( $'\n'"\\usepackage{$OPTARG}" )
+			;;
+		l)
+			tikzlibs+=( $'\n'"\\usetikzlibrary{$OPTARG}" )
 			;;
 		i)
-			document+=( "\\input{$OPTARG}" )
+			inputs+=( $'\n'"\\input{$OPTARG}" )
 			;;
-		l) # Use tikz library (although this can be set within tikz document)
-			document+=( "\\usetikzlibrary{$OPTARG}" )
+		d)
+			debug=true
 			;;
-		u)
-			document+=( "\\usepackage{$OPTARG}" )
+		h|\?)
+			echo "usage: $(basename "$0")" \
+				"[-c documentclass [-C classoptions]]" \
+				"[-p package]" \
+				"[-l tikzlibrary]" \
+				"[-i \input]" \
+				"<file>.tikz"
+			exit
 			;;
 	esac
 done
 shift $((OPTIND -1))
-# Preamble
-document=(
-	"\\documentclass{$class}"
-	"\\usepackage{tikz}"
-	"${document[@]}"
-)
-# TikZ figure
-document+=(
-	"\\begin{document}"
-	"\\thispagestyle{empty}"
-	"\\begin{figure}"
-		"\\centering"
-		"\\input{$1}"
-	"\\end{figure}"
-	"\\end{document}"
-)
+
+if $debug; then
+	cat <<-LATEX
+	\documentclass[$classopts]{$class}
+	${packages[@]}
+	${tikzlibs[@]}
+	${inputs[@]}
+	\begin{document}
+		\input{$1}
+	\end{document}
+	LATEX
+	exit
+fi
 
 if [ ! -f "$1" ]; then
 	echo "File does not exist: $1" >&2
@@ -51,5 +77,13 @@ fi
 name=${1%.tikz}
 mkdir -p "$name"
 
-pdflatex -jobname "$name" -output-directory "$name"	"${document[@]}"
+pdflatex -jobname "$name" -output-directory "$name" <<LATEX
+\documentclass[$classopts]{$class}
+${packages[@]}
+${tikzlibs[@]}
+${inputs[@]}
+\begin{document}
+	\input{$1}
+\end{document}
+LATEX
 
