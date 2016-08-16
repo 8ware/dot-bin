@@ -44,7 +44,7 @@ packages=()
 tikzlibs=()
 inputs=()
 action=compile
-while getopts 'c:C:p:l:i:d' opt; do
+while getopts 'c:C:p:l:i:dh' opt; do
 	case "$opt" in
 		c)
 			class=$OPTARG
