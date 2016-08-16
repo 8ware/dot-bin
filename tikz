@@ -38,6 +38,11 @@ compile() {
 	pdflatex -jobname "$name" -output-directory "$name"
 }
 
+if [ $# -eq 0 ]; then
+	"$0" -h
+	exit 1
+fi
+
 class='standalone'
 classopts='tikz,border=0.5cm'
 packages=()
